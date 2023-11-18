@@ -10,3 +10,5 @@ Flask
 Gunicorn
 psycopg2
 python-dotenv
+black
+white

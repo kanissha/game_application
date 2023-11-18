@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, request,render_template,session
 import psycopg2
+import os
 from psycopg2 import sql
 app = Flask(__name__)
 app.secret_key = 'kanisshhhhhhhhhhh'
@@ -10,6 +11,7 @@ conn = psycopg2.connect(
         user="k.palanisamy",
         password="password")
 cur = conn.cursor()
+app.config["SQLALCHEMY_DATABSE_URI"]=os.environ.get("DATABSE_URL")
 
 # SQL commands for creating table and inserting queries 
 # cur.execute('CREATE TABLE users ('
