@@ -1,6 +1,5 @@
 from flask import Flask, jsonify, request,render_template,session
 import psycopg2
-import os
 from psycopg2 import sql
 app = Flask(__name__)
 app.secret_key = 'kanisshhhhhhhhhhh'
