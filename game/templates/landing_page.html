@@ -1,0 +1,74 @@
+
+
+
+<html>
+<head>
+    <title>Game Listing</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        button {
+            margi
+n-top: 20px;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h1>Game Listing</h1>
+    {% if show_button %}
+        <p>{{ message }}</p>
+        <button onclick="location.href='/add_game'">Add New Game</button>
+    {% else %}
+        <table>
+            <tr>
+                <th>Title</th>
+                <th>Genre</th>
+                <th>Year</th>
+                <th>Description</th>
+                <th>Language</th>
+                <th>Platform</th>
+                <th>Playtime</th>
+                <th>Virtual Currency Balance</th>
+                <th>Virtual Currency Earned</th>
+            </tr>
+            {% for game in games %}
+                <tr>
+                    <td>{{ game.title }}</td>
+                    <td>{{ game.genre }}</td>
+                    <td>{{ game.year }}</td>
+                    <td>{{ game.description }}</td>
+                    <td>{{ game.language }}</td>
+                    <td>{{ game.platform }}</td>
+                    <td>{{ game.playtime }}</td>
+                    <td>{{ game.virtual_currency_balance }}</td>
+                    <td>{{ game.virtual_currency_earned }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+    {% endif %}
+</body>
+</html>
