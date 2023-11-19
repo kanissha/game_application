@@ -1,19 +1,36 @@
-from flask import Flask, jsonify, request,render_template,session
+from flask import Flask, jsonify, request,render_template,session,g
 import psycopg2
 import os
 from psycopg2 import sql
+import psycopg2.pool
 
 app = Flask(__name__)
 app.secret_key = 'kanisshhhhhhhhhhh'
 
-conn = psycopg2.connect(
-        host="dpg-clcgqcl4lnec73ckiht0-a.oregon-postgres.render.com",
-        database="game_db_8k0s",
-        user="game_db_8k0s_user",
-        password="jv9XnSLjJg5rqmdftqcK9JNGHoiGB9St")
+# conn = psycopg2.connect(
+#         host="dpg-clcgqcl4lnec73ckiht0-a.oregon-postgres.render.com",
+#         database="game_db_8k0s",
+#         user="game_db_8k0s_user",
+#         password="jv9XnSLjJg5rqmdftqcK9JNGHoiGB9St")
+
+db_pool = psycopg2.pool.ThreadedConnectionPool(5, 20, dbname="game_db_8k0s", user="game_db_8k0s_user", password="jv9XnSLjJg5rqmdftqcK9JNGHoiGB9St", host="dpg-clcgqcl4lnec73ckiht0-a.oregon-postgres.render.com")
+
+@app.before_request
+def before_request():
+    g.db_conn = db_pool.getconn()
+    g.db_cursor = g.db_conn.cursor()
+    
+@app.teardown_request
+def teardown_request(exception=None):
+    db_cursor = getattr(g, 'db_cursor', None)
+    db_conn = getattr(g, 'db_conn', None)
+    if db_cursor:
+        db_cursor.close()
+    if db_conn:
+        db_pool.putconn(db_conn)
+
 #postgres://game_db_8k0s_user:jv9XnSLjJg5rqmdftqcK9JNGHoiGB9St@dpg-clcgqcl4lnec73ckiht0-a.oregon-postgres.render.com/game_db_8k0s
-cur = conn.cursor()
- 
+
 
 # SQL commands for creating table and inserting queries 
 # cur.execute('CREATE TABLE users ('
@@ -88,16 +105,15 @@ def register_user():
         username = data.get('username')
         email = data.get('email')
         password = data.get('password')
-        cur.execute('SELECT uid FROM users WHERE username = %s OR email = %s', (username, email))
-        existing_user = cur.fetchone()
+        g.db_cursor.execute('SELECT uid FROM users WHERE username = %s OR email = %s',(username, email))
+        # cur.execute('SELECT uid FROM users WHERE username = %s OR email = %s', (username, email))
+        existing_user =  g.db_cursor.fetchone()
         if existing_user:
             return jsonify({'error': 'Username or email already exists'})
 
-        cur.execute('INSERT INTO users (username, email, password) VALUES (%s, %s, %s) RETURNING uid',
+        g.db_cursor.execute('INSERT INTO users (username, email, password) VALUES (%s, %s, %s) RETURNING uid',
                     (username, email, password))
-        uid = cur.fetchone()[0]
-        conn.commit()
-
+        uid =  g.db_cursor.fetchone()[0]
         return jsonify({'message': 'User registered successfully', 'user_id': uid})
     except Exception as e:
         return jsonify({'error': str(e)})
@@ -111,8 +127,9 @@ def login():
         data = request.get_json()
         username = data.get('username')
         password = data.get('password')
-        cur.execute('SELECT uid, password FROM users WHERE username = %s', (username,))
-        user_data = cur.fetchone()
+        g.db_cursor.execute('SELECT uid, password FROM users WHERE username = %s', (username,))
+        user_data =  g.db_cursor.fetchone()
+        print(user_data)
         if not user_data:
             return jsonify({'error': 'Invalid username'})
         uid, stored_password = user_data
@@ -121,14 +138,15 @@ def login():
             return jsonify({'message': 'Login successful', 'user_id': uid})
         else:
             return jsonify({'error': 'Invalid password'})
+        
     except Exception as e:
         return jsonify({'error': str(e)})
 
 
 @app.route('/')
 def landing_page():
-    cur.execute('SELECT * FROM games')
-    results=cur.fetchall()
+    g.db_cursor.execute('SELECT * FROM games')
+    results= g.db_cursor.fetchall()
     games = []
     print(results)
     for result in results:
@@ -154,8 +172,8 @@ def landing_page():
 
 @app.route('/games', methods=['GET'])
 def get_games():
-    cur.execute('SELECT * FROM games')
-    result = cur.fetchall()
+    g.db_cursor.execute('SELECT * FROM games')
+    result =  g.db_cursor.fetchall()
     games = {row[0]:{'id': row[0], 'title': row[1], 'genre': row[2], 'year': row[3], 'is_favourite': row[4],'decription': row[5],'language': row[6],'platform': row[7],'playtime': row[8],'virtual_currency_balance':row[9],'virtual_currency_earned':row[10]} for row in result}
     return jsonify(games)
     # cur.execute("SELECT * FROM games")
@@ -196,9 +214,8 @@ def search_games():
     if conditions:
         query += sql.SQL(" WHERE ") + sql.SQL(" AND ").join(conditions)
 
-   
-    cur.execute(query)
-    result = cur.fetchall()
+    g.db_cursor.execute(query)
+    result =  g.db_cursor.fetchall()
     games = [
         {
             'id': row[0],
@@ -215,7 +232,6 @@ def search_games():
         }
         for row in result
     ]
-
     return jsonify(games)
     
 
@@ -223,10 +239,9 @@ def search_games():
 def add_game():
 
     data = request.get_json()   
-    cur.execute("INSERT INTO games (title,genre,year,is_favourite,description,language,platform,playtime,virtual_currency_balance,virtual_currency_earned) VALUES (%s, %s, %s, %s, %s,%s ,%s,%s,%s,%s)",
+    g.db_cursor.execute("INSERT INTO games (title,genre,year,is_favourite,description,language,platform,playtime,virtual_currency_balance,virtual_currency_earned) VALUES (%s, %s, %s, %s, %s,%s ,%s,%s,%s,%s)",
                    (data['title'], data['genre'], data['year'],data['is_favourite'],data['description'],data['language'],data['platform'],data['playtime'],data['virtual_currency_balance'],data['virtual_currency_earned']))
 
-    conn.commit()
     return jsonify({'message': 'Game added  successfully'})
     
     
@@ -235,8 +250,8 @@ def add_game():
 def mark_as_favorite(id):
     try:
         # Check if the game_id exists
-        cur.execute('SELECT id, is_favourite FROM games WHERE id = %s', (id,))
-        result = cur.fetchone()
+        g.db_cursor.execute('SELECT id, is_favourite FROM games WHERE id = %s', (id,))
+        result =  g.db_cursor.fetchone()
 
         if not result:
             return jsonify({'message': 'Game not found'}), 404
@@ -245,9 +260,7 @@ def mark_as_favorite(id):
 
         is_favourite = not is_favourite
 
-        cur.execute('UPDATE games SET is_favourite = %s WHERE id = %s', (is_favourite, id))
-        conn.commit()
-
+        g.db_cursor.execute('UPDATE games SET is_favourite = %s WHERE id = %s', (is_favourite, id))
         message = 'Game marked as favorite' if is_favourite else 'Game marked as un favorite'
         result = {'game_id': game_id, 'is_favourite': is_favourite, 'message': message}
         return jsonify(result)
@@ -267,11 +280,11 @@ def add_review_to_game(id):
 
         if not uid:
             return jsonify({'error': 'User not logged in'})
+    
 
-        cur.execute('INSERT INTO feedback (id, uid, username, rating, comment) VALUES (%s, %s, %s, %s, %s)',
+        g.db_cursor.execute('INSERT INTO feedback (id, uid, username, rating, comment) VALUES (%s, %s, %s, %s, %s)',
                     (id, uid, username, rating, comment))
-        conn.commit()
-
+    
         return jsonify({'message': 'Comment added to the game successfully'})
     except Exception as e:
         return jsonify({'error': str(e)})
@@ -288,23 +301,21 @@ def earn_virtual_currency(id):
         earned_amount = playtime * 5
         virtual_currency_balance=int(virtual_currency_balance)
         virtual_currency_earned=int(virtual_currency_earned)
-        
-        cur.execute('UPDATE games SET virtual_currency_balance = virtual_currency_balance + %s, virtual_currency_earned = virtual_currency_earned + %s WHERE id = %s RETURNING virtual_currency_balance, virtual_currency_earned',
+        g.db_cursor.execute('UPDATE games SET virtual_currency_balance = virtual_currency_balance + %s, virtual_currency_earned = virtual_currency_earned + %s WHERE id = %s RETURNING virtual_currency_balance, virtual_currency_earned',
          (earned_amount, earned_amount, id))
 
        
-        updated_values = cur.fetchone()
+        updated_values =  g.db_cursor.fetchone()
         updated_virtual_currency_balance, updated_virtual_currency_earned = updated_values[0], updated_values[1]
 
-        conn.commit()
         return jsonify({'virtual_currency_balance': updated_virtual_currency_balance, 'virtual_currency_earned': updated_virtual_currency_earned})
        
 
 @app.route('/deletegame/<int:id>', methods=['DELETE'])
 def delete_game(id):
    
-    cur.execute("DELETE FROM games WHERE id = %s", (id,))
-    conn.commit()
+
+    g.db_cursor.execute("DELETE FROM games WHERE id = %s", (id,))
     return jsonify({'message': 'Game deleted successfully'})
 
 # conn.commit()
