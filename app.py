@@ -311,5 +311,5 @@ def delete_game(id):
 # cur.close()
 # conn.close()
 
-if __name__ == '_main_':
-    app.run(debug=True)
+# if __name__ == '_main_':
+#     app.run(debug=True)
