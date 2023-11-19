@@ -114,6 +114,7 @@ def register_user():
         g.db_cursor.execute('INSERT INTO users (username, email, password) VALUES (%s, %s, %s) RETURNING uid',
                     (username, email, password))
         uid =  g.db_cursor.fetchone()[0]
+        g.db_conn.commit()
         return jsonify({'message': 'User registered successfully', 'user_id': uid})
     except Exception as e:
         return jsonify({'error': str(e)})
@@ -140,6 +141,7 @@ def login():
             return jsonify({'error': 'Invalid password'})
         
     except Exception as e:
+        print(str(e))
         return jsonify({'error': str(e)})
 
 
@@ -237,12 +239,17 @@ def search_games():
 
 @app.route('/add_game', methods=['POST'])
 def add_game():
-
-    data = request.get_json()   
-    g.db_cursor.execute("INSERT INTO games (title,genre,year,is_favourite,description,language,platform,playtime,virtual_currency_balance,virtual_currency_earned) VALUES (%s, %s, %s, %s, %s,%s ,%s,%s,%s,%s)",
-                   (data['title'], data['genre'], data['year'],data['is_favourite'],data['description'],data['language'],data['platform'],data['playtime'],data['virtual_currency_balance'],data['virtual_currency_earned']))
-
-    return jsonify({'message': 'Game added  successfully'})
+    try:
+            data = request.get_json()   
+            g.db_cursor.execute("INSERT INTO games (title,genre,year,is_favourite,description,language,platform,playtime,virtual_currency_balance,virtual_currency_earned) VALUES (%s, %s, %s, %s, %s,%s ,%s,%s,%s,%s)",
+                        (data['title'], data['genre'], data['year'],data['is_favourite'],data['description'],data['language'],data['platform'],data['playtime'],data['virtual_currency_balance'],data['virtual_currency_earned']))
+            
+            g.db_conn.commit()
+            return jsonify({'message': 'Game added  successfully'})  
+            
+    except Exception as e:
+        print(str(e))
+        return jsonify({'error':str(e)})
     
     
 
@@ -261,6 +268,7 @@ def mark_as_favorite(id):
         is_favourite = not is_favourite
 
         g.db_cursor.execute('UPDATE games SET is_favourite = %s WHERE id = %s', (is_favourite, id))
+        g.db_conn.commit()
         message = 'Game marked as favorite' if is_favourite else 'Game marked as un favorite'
         result = {'game_id': game_id, 'is_favourite': is_favourite, 'message': message}
         return jsonify(result)
@@ -284,7 +292,7 @@ def add_review_to_game(id):
 
         g.db_cursor.execute('INSERT INTO feedback (id, uid, username, rating, comment) VALUES (%s, %s, %s, %s, %s)',
                     (id, uid, username, rating, comment))
-    
+        g.db_conn.commit()
         return jsonify({'message': 'Comment added to the game successfully'})
     except Exception as e:
         return jsonify({'error': str(e)})
@@ -306,6 +314,7 @@ def earn_virtual_currency(id):
 
        
         updated_values =  g.db_cursor.fetchone()
+        g.db_conn.commit()
         updated_virtual_currency_balance, updated_virtual_currency_earned = updated_values[0], updated_values[1]
 
         return jsonify({'virtual_currency_balance': updated_virtual_currency_balance, 'virtual_currency_earned': updated_virtual_currency_earned})
@@ -316,6 +325,7 @@ def delete_game(id):
    
 
     g.db_cursor.execute("DELETE FROM games WHERE id = %s", (id,))
+    g.db_conn.commit()
     return jsonify({'message': 'Game deleted successfully'})
 
 # conn.commit()
