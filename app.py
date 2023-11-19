@@ -156,13 +156,19 @@ def landing_page():
 def get_games():
     cur.execute('SELECT * FROM games')
     result = cur.fetchall()
-    games = [{'id': row[0], 'title': row[1], 'genre': row[2], 'year': row[3], 'is_favourite': row[4],'decription': row[5],'language': row[6],'platform': row[7],'playtime': row[8],'virtual_currency_balance':row[9],'virtual_currency_earned':row[10]} for row in result]
+    games = {row[0]:{'id': row[0], 'title': row[1], 'genre': row[2], 'year': row[3], 'is_favourite': row[4],'decription': row[5],'language': row[6],'platform': row[7],'playtime': row[8],'virtual_currency_balance':row[9],'virtual_currency_earned':row[10]} for row in result}
     return jsonify(games)
+    # cur.execute("SELECT * FROM games")
+    # rows = cur.fetchall()
+    # columns = ["id", "title", "genre", "year", "is_favorite", "description", "language", "platform", "playtime", "virtual_currency_balance", "virtual_currency_earned"]
+    # games = [dict(zip(columns, row)) for row in rows]
 
+    return jsonify(games)
 
 
 @app.route('/games/search', methods=['GET'])
 def search_games():
+    # Get query parameters
     genre = request.args.get('genre')
     year = request.args.get('year')
     title = request.args.get('title')
@@ -170,15 +176,31 @@ def search_games():
     language = request.args.get('language')
     platform = request.args.get('platform')
     playtime = request.args.get('playtime')
-    virtual_currency_balance= request.args.get('virtual_currency_balance')
-    virtual_currency_earned=request.args.get('virtual_currency_earned')
+    virtual_currency_balance = request.args.get('virtual_currency_balance')
+    virtual_currency_earned = request.args.get('virtual_currency_earned')
+    query = sql.SQL("SELECT * FROM games")
 
-    # cur.execute('SELECT * FROM games WHERE genre = %s AND year = %s', (genre, year))
-    cur.execute('SELECT * FROM games WHERE genre = %s OR year = %s OR title ILIKE%s  OR description = %s  OR language = %s  OR platform = %s  OR playtime = %s  OR virtual_currency_balance = %s  OR virtual_currency_earned = %s', (genre, year,f"%{title}%",description,language,platform,playtime,virtual_currency_balance,virtual_currency_earned))
+    conditions = [
+        sql.SQL("genre = {}").format(sql.Literal(genre)) if genre else None,
+        sql.SQL("year = {}").format(sql.Literal(year)) if year else None,
+        sql.SQL("title ILIKE {}").format(sql.Literal(f"%{title}%")) if title else None,
+        sql.SQL("description = {}").format(sql.Literal(description)) if description else None,
+        sql.SQL("language = {}").format(sql.Literal(language)) if language else None,
+        sql.SQL("platform = {}").format(sql.Literal(platform)) if platform else None,
+        sql.SQL("playtime = {}").format(sql.Literal(playtime)) if playtime else None,
+        sql.SQL("virtual_currency_balance = {}").format(sql.Literal(virtual_currency_balance)) if virtual_currency_balance else None,
+        sql.SQL("virtual_currency_earned = {}").format(sql.Literal(virtual_currency_earned)) if virtual_currency_earned else None,
+    ]
+
+    conditions = filter(None, conditions)
+    if conditions:
+        query += sql.SQL(" WHERE ") + sql.SQL(" AND ").join(conditions)
+
+   
+    cur.execute(query)
     result = cur.fetchall()
-    games = []
-    for row in result:
-        game = {
+    games = [
+        {
             'id': row[0],
             'title': row[1],
             'genre': row[2],
@@ -188,13 +210,13 @@ def search_games():
             'language': row[6],
             'platform': row[7],
             'playtime': row[8],
-            'virtual_currency_balance':row[9],
-            'virtual_currency_earned':row[10]
+            'virtual_currency_balance': row[9],
+            'virtual_currency_earned': row[10]
         }
-        games.append(game)
+        for row in result
+    ]
 
     return jsonify(games)
-  
     
 
 @app.route('/add_game', methods=['POST'])
