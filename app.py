@@ -2,16 +2,18 @@ from flask import Flask, jsonify, request,render_template,session
 import psycopg2
 import os
 from psycopg2 import sql
+
 app = Flask(__name__)
 app.secret_key = 'kanisshhhhhhhhhhh'
 
 conn = psycopg2.connect(
-        host="localhost",
-        database="game_db",
-        user="k.palanisamy",
-        password="password")
+        host="dpg-clcgqcl4lnec73ckiht0-a.oregon-postgres.render.com",
+        database="game_db_8k0s",
+        user="game_db_8k0s_user",
+        password="jv9XnSLjJg5rqmdftqcK9JNGHoiGB9St")
+#postgres://game_db_8k0s_user:jv9XnSLjJg5rqmdftqcK9JNGHoiGB9St@dpg-clcgqcl4lnec73ckiht0-a.oregon-postgres.render.com/game_db_8k0s
 cur = conn.cursor()
-app.config["SQLALCHEMY_DATABSE_URI"]=os.environ.get("DATABSE_URL")
+ 
 
 # SQL commands for creating table and inserting queries 
 # cur.execute('CREATE TABLE users ('
