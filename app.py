@@ -20,6 +20,11 @@ def before_request():
     g.db_conn = db_pool.getconn()
     g.db_cursor = g.db_conn.cursor()
     
+@app.after_request
+def add_custom_headers(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    return response
+   
 @app.teardown_request
 def teardown_request(exception=None):
     db_cursor = getattr(g, 'db_cursor', None)
