@@ -79,19 +79,21 @@ cur = conn.cursor()
 #              )
 #             )
 
+
 @app.route('/register', methods=['POST'])
 def register_user():
     try:
         data = request.get_json()
         username = data.get('username')
         email = data.get('email')
+        password = data.get('password')
         cur.execute('SELECT uid FROM users WHERE username = %s OR email = %s', (username, email))
         existing_user = cur.fetchone()
-
         if existing_user:
             return jsonify({'error': 'Username or email already exists'})
 
-        cur.execute('INSERT INTO users (username, email) VALUES (%s, %s) RETURNING uid', (username, email))
+        cur.execute('INSERT INTO users (username, email, password) VALUES (%s, %s, %s) RETURNING uid',
+                    (username, email, password))
         uid = cur.fetchone()[0]
         conn.commit()
 
@@ -100,22 +102,27 @@ def register_user():
         return jsonify({'error': str(e)})
 
 
+
+
 @app.route('/login', methods=['POST'])
 def login():
     try:
         data = request.get_json()
         username = data.get('username')
-
-        cur.execute('SELECT uid FROM users WHERE username = %s', (username,))
-        uid = cur.fetchone()
-
-        if not uid:
+        password = data.get('password')
+        cur.execute('SELECT uid, password FROM users WHERE username = %s', (username,))
+        user_data = cur.fetchone()
+        if not user_data:
             return jsonify({'error': 'Invalid username'})
-
-        session['uid'] = uid
-        return jsonify({'message': 'Login successful', 'user_id': uid})
+        uid, stored_password = user_data
+        if password == stored_password:
+            session['uid'] = uid
+            return jsonify({'message': 'Login successful', 'user_id': uid})
+        else:
+            return jsonify({'error': 'Invalid password'})
     except Exception as e:
         return jsonify({'error': str(e)})
+
 
 @app.route('/')
 def landing_page():
