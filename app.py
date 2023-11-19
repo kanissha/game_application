@@ -13,7 +13,7 @@ app.secret_key = 'kanisshhhhhhhhhhh'
 #         user="game_db_8k0s_user",
 #         password="jv9XnSLjJg5rqmdftqcK9JNGHoiGB9St")
 
-db_pool = psycopg2.pool.ThreadedConnectionPool(5, 20, dbname="game_db_8k0s", user="game_db_8k0s_user", password="jv9XnSLjJg5rqmdftqcK9JNGHoiGB9St", host="dpg-clcgqcl4lnec73ckiht0-a.oregon-postgres.render.com")
+db_pool = psycopg2.pool.ThreadedConnectionPool(5, 20, dbname="game_db_8k0s", user="game_db_8k0s_user", password="jv9XnSLjJg5rqmdftqcK9JNGHoiGB9St", host="dpg-clcgqcl4lnec73ckiht0-a.oregon-postgres.render.com",sslmode='require')
 
 @app.before_request
 def before_request():
