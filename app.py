@@ -19,7 +19,8 @@ cur = conn.cursor()
 # cur.execute('CREATE TABLE users ('
 #                'uid serial PRIMARY KEY,'
 #                'username VARCHAR(100) UNIQUE  NOT NULL,'
-#                'email VARCHAR(100)  UNIQUE NOT NULL)'
+#                'email VARCHAR(100)  UNIQUE NOT NULL)',
+#                'password VARCHAR(100)NOT NULL'
 #                )
 # cur.execute('CREATE TABLE games ('
 #                'id serial PRIMARY KEY,'
@@ -288,5 +289,5 @@ def delete_game(id):
 # cur.close()
 # conn.close()
 
-# if __name__ == '_main_':
-#     app.run(debug=True)
+if __name__ == '_main_':
+    app.run(debug=True)
